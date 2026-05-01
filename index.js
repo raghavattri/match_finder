@@ -13,6 +13,20 @@ dotenv.config();
 
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'MERN App Backend',
+    endpoints: {
+      health: '/api/health',
+    }
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ message: 'Backend is running!' });
+});
+
+
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/matches", matchRoutes);
