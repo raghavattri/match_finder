@@ -1,21 +1,20 @@
 const express = require("express");
+const dotenv =  require('dotenv'); 
+dotenv.config();
+
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const matchRoutes = require("./routes/match");
 const connectionRoutes = require("./routes/connections");
-const dotenv =  require('dotenv'); 
 const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-
-dotenv.config();
-
 app.use(cors({
-  origin: "http://localhost:5173", // Default Vite port
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true
 }));
 

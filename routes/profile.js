@@ -2,6 +2,8 @@ const express = require("express");
 const authMiddleware = require("../middleware/auth");
 const User = require("../models/user");
 const blockedMiddleware = require("../middleware/Block");
+const { uploadImage } = require("../middleware/upload");
+const { cloudinary, assertCloudinaryConfig } = require("../config/cloudinary");
 const router = express.Router();
 
 
@@ -54,6 +56,58 @@ router.put("/", authMiddleware, blockedMiddleware, async (req, res) => {
         res.status(500).json({ error: error.message });
       }
 });
+
+router.post(
+  "/photo",
+  authMiddleware,
+  blockedMiddleware,
+  uploadImage.single("avatar"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Profile photo is required" });
+      }
+
+      assertCloudinaryConfig();
+
+      const user = await User.findById(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "matchfinder/profile-photos",
+            resource_type: "image",
+            public_id: `user-${user._id}`,
+            overwrite: true,
+            transformation: [
+              { width: 600, height: 600, crop: "fill", gravity: "face" },
+              { quality: "auto", fetch_format: "auto" },
+            ],
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+
+        stream.end(req.file.buffer);
+      });
+
+      user.avatar = uploadResult.secure_url;
+      await user.save();
+
+      res.status(200).json({
+        message: "Profile photo uploaded successfully",
+        userdetails: user,
+      });
+    } catch (error) {
+      res.status(error.status || 500).json({ message: error.message || "Failed to upload profile photo" });
+    }
+  }
+);
 
 
 
