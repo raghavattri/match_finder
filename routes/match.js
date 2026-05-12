@@ -18,15 +18,31 @@ router.get("/find-match", authMiddleware,blockedMiddleware, async (req, res) => 
       _id: { $ne: user._id },
       gender: { $ne: user.gender },
       blocked: { $ne: true },
-    });
-    const matchingUsers = users.filter((otherUser) => {
-      const commonHobbies = user.hobbies.filter((hobby) =>
-        otherUser.hobbies.includes(hobby)
+    }).select("name age gender hobbies location avatar bio lookingFor storyPrompt storyAnswer");
+
+    const matchingUsers = users.map((otherUser) => {
+      const commonHobbies = (user.hobbies || []).filter((hobby) =>
+        (otherUser.hobbies || []).includes(hobby)
       );
-      const matchingPercentage =
-        (commonHobbies.length / user.hobbies.length) * 100;
-      return matchingPercentage >= 70;
-    });
+      const userData = otherUser.toObject();
+
+      // Handle case where user has no hobbies
+      if (!user.hobbies || user.hobbies.length === 0) {
+        return {
+          ...userData,
+          sharedHobbies: commonHobbies,
+          matchPercentage: 0
+        };
+      }
+
+      const matchingPercentage = Math.round((commonHobbies.length / user.hobbies.length) * 100);
+      
+      return {
+        ...userData,
+        sharedHobbies: commonHobbies,
+        matchPercentage: matchingPercentage
+      };
+    }).sort((a, b) => b.matchPercentage - a.matchPercentage);
 
     res.status(200).json({ matches: matchingUsers });
   } catch (error) {

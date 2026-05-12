@@ -4,12 +4,20 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const matchRoutes = require("./routes/match");
+const connectionRoutes = require("./routes/connections");
 const dotenv =  require('dotenv'); 
+const cors = require('cors');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 
 dotenv.config();
+
+app.use(cors({
+  origin: "http://localhost:5173", // Default Vite port
+  credentials: true
+}));
 
 app.use(bodyParser.json());
 
@@ -30,6 +38,7 @@ app.get('/api/health', (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/connections", connectionRoutes);
 
 const url = process.env.MONGODB_URL;
 

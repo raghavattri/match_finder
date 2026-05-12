@@ -5,6 +5,17 @@ const blockedMiddleware = require("../middleware/Block");
 const router = express.Router();
 
 
+router.get("/", authMiddleware, blockedMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ userdetails: user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.put("/", authMiddleware, blockedMiddleware, async (req, res) => {
  
@@ -16,11 +27,24 @@ router.put("/", authMiddleware, blockedMiddleware, async (req, res) => {
         }
     
         // Update user details
-        user.name = req.body.name || user.name;
-        user.dob = req.body.dob || user.dob;
-        user.gender = req.body.gender || user.gender;
-        user.hobbies = req.body.hobbies || user.hobbies;
-        user.location = req.body.location || user.location;
+        const allowedFields = [
+          "name",
+          "age",
+          "gender",
+          "hobbies",
+          "location",
+          "avatar",
+          "bio",
+          "lookingFor",
+          "storyPrompt",
+          "storyAnswer",
+        ];
+
+        allowedFields.forEach((field) => {
+          if (req.body[field] !== undefined) {
+            user[field] = req.body[field];
+          }
+        });
     
         // Save updated user
         await user.save();
