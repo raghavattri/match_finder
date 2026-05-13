@@ -20,29 +20,49 @@ router.get("/find-match", authMiddleware,blockedMiddleware, async (req, res) => 
       blocked: { $ne: true },
     }).select("name age gender hobbies location avatar bio lookingFor storyPrompt storyAnswer");
 
+    const currentUserHobbies = user.hobbies || [];
+    const currentUserHobbyKeys = currentUserHobbies.map((hobby) => hobby.toLowerCase().trim());
+
     const matchingUsers = users.map((otherUser) => {
-      const commonHobbies = (user.hobbies || []).filter((hobby) =>
-        (otherUser.hobbies || []).includes(hobby)
+      const otherUserHobbies = otherUser.hobbies || [];
+      const otherUserHobbyKeys = new Set(
+        otherUserHobbies.map((hobby) => hobby.toLowerCase().trim())
+      );
+      const commonHobbies = currentUserHobbies.filter((hobby, index) =>
+        otherUserHobbyKeys.has(currentUserHobbyKeys[index])
       );
       const userData = otherUser.toObject();
+      const hasMatchData = currentUserHobbies.length > 0 && otherUserHobbies.length > 0;
 
-      // Handle case where user has no hobbies
-      if (!user.hobbies || user.hobbies.length === 0) {
+      if (!hasMatchData) {
         return {
           ...userData,
           sharedHobbies: commonHobbies,
-          matchPercentage: 0
+          matchPercentage: 0,
+          matchTier: "new",
         };
       }
 
-      const matchingPercentage = Math.round((commonHobbies.length / user.hobbies.length) * 100);
+      const matchingPercentage = Math.round(
+        (commonHobbies.length / Math.max(currentUserHobbies.length, otherUserHobbies.length)) * 100
+      );
+      const matchTier =
+        matchingPercentage >= 70
+          ? "best"
+          : matchingPercentage > 0
+            ? "shared"
+            : "other";
       
       return {
         ...userData,
         sharedHobbies: commonHobbies,
-        matchPercentage: matchingPercentage
+        matchPercentage: matchingPercentage,
+        matchTier,
       };
-    }).sort((a, b) => b.matchPercentage - a.matchPercentage);
+    }).sort((a, b) => {
+      const tierOrder = { best: 0, explore: 1, new: 2 };
+      return tierOrder[a.matchTier] - tierOrder[b.matchTier] || b.matchPercentage - a.matchPercentage;
+    });
 
     res.status(200).json({ matches: matchingUsers });
   } catch (error) {

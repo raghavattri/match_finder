@@ -17,10 +17,16 @@ const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
+const defaultLocalOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+];
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
+  if (defaultLocalOrigins.includes(origin)) return true;
 
   try {
     const { hostname, protocol } = new URL(origin);
