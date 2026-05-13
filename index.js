@@ -52,6 +52,12 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/connections", connectionRoutes);
 
+// Backward-compatible aliases for deployments accidentally configured without `/api`.
+app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes);
+app.use("/matches", matchRoutes);
+app.use("/connections", connectionRoutes);
+
 const url = process.env.MONGODB_URL;
 
 mongoose
